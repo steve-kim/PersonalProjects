@@ -21,6 +21,9 @@ public class MainActivity extends Activity {
 	
 	private String videoPath = "http://daily3gp.com/vids/Funny women cannot understand.3gp";
 	private int pauseLocation = 0;
+	private boolean videoUrlSet = false;
+	private boolean isPaused = false;
+	private boolean isStopped = true;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -75,22 +78,27 @@ public class MainActivity extends Activity {
 
 	//Starts the video playback
 	private void playVideo() {
-		debugLog.v(TAG, "Beginning Playback");
-		if (video != null) {
-			//Set the URL for the video to stream from
+		//Set the URL for the video to stream from
+		//We only need to set the URL if we have previously stopped the video
+		if (video != null && isStopped)
 			video.setVideoURI(Uri.parse(videoPath));
-			
+		
+		if (video != null) {
 			//We have paused this video before, start from the saved location
 			if (pauseLocation > 0) {
+				debugLog.v(TAG, "Resuming Playback");
 				video.seekTo(pauseLocation);
 				video.start();
 				video.requestFocus();
+				isPaused = false;
 				return;
 			}
 			//We have not paused the video, start from the beginning
 			else if (pauseLocation == 0) {
+				debugLog.v(TAG, "Beginning Playback");
 				//We need to reset the pause location so that subsequent plays start from the beginning
 				pauseLocation = 0;
+				isStopped = false;
 				video.start();
 				video.requestFocus();
 				return;
@@ -100,10 +108,18 @@ public class MainActivity extends Activity {
 	
 	//Pauses the video playback
 	private void pauseVideo() {
-		debugLog.v(TAG, "Pausing Playback");
-		if (video != null) {
+		if (video != null && isPaused) {
+			debugLog.v(TAG, "Resuming Playback");
+			video.seekTo(pauseLocation);
+			video.start();
+			isPaused = false;
+		}
+		
+		else if (video != null && !isPaused) {
+			debugLog.v(TAG, "Pausing Playback");
 			video.pause();
 			pauseLocation = video.getCurrentPosition();
+			isPaused = true;
 		}
 	}
 
@@ -117,7 +133,10 @@ public class MainActivity extends Activity {
 	//Stops the video playback
 	private void stopVideo() {
 		debugLog.v(TAG, "Stopping Playback");
-		if (video != null)
+		if (video != null) {
 			video.stopPlayback();
+			pauseLocation = 0;
+			isStopped = true;
+		}
 	}
 }
